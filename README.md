@@ -1,2 +1,8 @@
 # ABLHW-Instances
 Assembly Line Balancing with Hierarchical Worker Assignment
+
+
+
+# Generatore 
+
+
