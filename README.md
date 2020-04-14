@@ -3,6 +3,16 @@ Assembly Line Balancing with Hierarchical Worker Assignment, based on the instan
 
 # Instance Structure
 
+<number of tasks>
+<cycle time>
+<order strength>
+<task times>
+<precedence relations>
+<type workers>
+<task types>
+<task times>
+<worker costs>
+
 
 # Instances
 

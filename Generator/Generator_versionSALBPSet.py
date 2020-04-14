@@ -10,6 +10,8 @@ import copy
 import glob
 import os
 
+## Example
+## python Generator.py filestructure.xlsx instance_folder destination_folder GraphType #Instances
 
 class Generator:
     """
@@ -30,7 +32,7 @@ class Generator:
     pathInstances = ""
     pathDestination = ""
     pathDetails = ""
-    dict = {"bimodal":"BM", "peak at the bottom":"PB", "peak in the middle": "PM", \
+    dict = {"bimodal":"BM", "bottom":"PB", "middle": "PM", \
         "extremely tricky":"ET", "very tricky": "VT", "less tricky":"LT", "tricky": "TR", "open (not known yet)": "OP"}
     def __init__(self, pathDetails : str, pathInstances : str, pathDestination : str):
         """
@@ -48,10 +50,14 @@ class Generator:
         self.create_folders()
 
     def create_folders(self):
-        os.makedirs(self.pathDestination + "Large/Instance1.0-1.0")
-        for r1 in self.w1:
-            for r2 in self.w2:
-                os.makedirs(self.pathDestination + "Large/Instance" + str(r1) + "-" + str(r2))
+        try:
+            os.makedirs(self.pathDestination + "Large/Instance1.0-1.0")
+            for r1 in self.w1:
+                for r2 in self.w2:
+                    os.makedirs(self.pathDestination + "Large/Instance" + str(r1) + "-" + str(r2))
+        except:
+            print("Already exists!")
+
     def select_data(self, type: str):
         """
         # Parameters
@@ -62,30 +68,35 @@ class Generator:
 
         """
         try:
-            details = pd.read_excel(self.pathDetails, skiprows=[0])
+            details = pd.read_excel(self.pathDetails)
         except Exception:
             print("Not able to open the file: {0}".format(path))
-        selected = details.loc[(details["<Graph structure>"] == type) & (details["<Trickiness category>"] != "open (not known yet)")].copy()
+        selected = details.loc[(details["<Graph structures>"] == type)].copy()
         # Order by Time Distribuition and Desired OS
-        self.groups = selected.groupby(["<Times distribution>", "<Desired OS>"])
+        self.groups = selected.groupby(["<Distribution of task times>", "<desired OS>"])
+
     def choosing_instances(self, n : int):
         for name, group in self.groups:
-            # Create the keys 
-            for i in group.iloc[:,5:6].values:
-                if((name[0], name[1], i[0]) not in self.instances):
-                    self.instances[(name[0], name[1], i[0])] = []
+            print(name)
+            if((name[0], name[1]) not in self.instances):
+                self.instances[(name[0], name[1])] = []
+            #print(name, group)
+            #for i in group.iloc[:, 4].values:
+            #    if((name[0], name[1], i) not in self.instances):
+            #        self.instances[(name[0], name[1])] = []
             if(len(group) < n):
                 qnt = len(group)
             else:
                 qnt = n
             inst = group.sample(qnt)
+            print(inst)
             for i in inst.values:
-                self.instances[(name[0], name[1], i[5])].append(i[1])
+                self.instances[(name[0], name[1])].append(i[0])
 
     def creating_instancesSALB(self):
         for i,k in self.instances.items():
             for ins in k:
-                with open(self.pathInstances + ins + ".alb", "r") as instance:
+                with open(self.pathInstances + "instance_n=250_" + str(ins) + ".alb", "r") as instance:
                     instanceRaw = [i.replace(","," ") for i in instance.readlines()[:-1]]
                     instanceRaw.append("<type workers>\n")
                     instanceRaw.append(str(1)+"\n")
@@ -103,7 +114,8 @@ class Generator:
                     instanceRaw.append("<worker costs>\n")
                     instanceRaw.append(str(self.h1Cost) + "\n")
                     instanceRaw.append("<end>")
-                    nameFile = str(ins.split("_")[2])+ "_"+ str(1.0) + "_" + str(1.0) + "_" + str(i[1])   + "_" + self.dict[i[0]]+ "_" + self.dict[i[2]] + ".albhw"
+                    print(ins, i)
+                    nameFile = str(ins) + "_"+ str(1.0) + "_" + str(1.0) + "_" + str(i[1])   + "_" + self.dict[i[0]] + ".albhw"
                     namePath = self.pathDestination + "Large/Instance" + str(1.0) + "-" + str(1.0) + "/L"                  
                     with open(namePath+nameFile, "w") as newInstance:
                         newInstance.writelines(instanceRaw)
@@ -114,7 +126,7 @@ class Generator:
             for rule2 in range(len(self.w2)):
                 for i,k in self.instances.items():
                     for ins in k:
-                        with open(self.pathInstances + ins + ".alb", "r") as instance:
+                        with open(self.pathInstances + "instance_n=250_" + str(ins) + ".alb", "r") as instance:
                             instanceRaw = [i.replace(","," ") for i in instance.readlines()[:-1]]
                             instanceRaw.append("<type workers>\n")
                             instanceRaw.append(str(self.qntLavoratori)+"\n")
@@ -148,7 +160,7 @@ class Generator:
                             instanceRaw.append(str(round(calc2)) + "\n")
                             instanceRaw.append("<end>")
                             namePath = self.pathDestination + "Large/Instance" + str( self.w1[rule1]) + "-" + str( self.w2[rule2])
-                            nameInstance = "/L" + str(ins.split("_")[2])+ "_"+ str(self.w1[rule1]) + "_" + str(self.w2[rule2]) + "_" + str(i[1])   + "_" + self.dict[i[0]]+ "_" + self.dict[i[2]] + ".albhw"
+                            nameInstance = "/L" + str(ins) + "_"+ str(self.w1[rule1]) + "_" + str(self.w2[rule2]) + "_" + str(i[1])   + "_" + self.dict[i[0]] + ".albhw"
                             with open(namePath + nameInstance, "w") as newInstance:
                                 newInstance.writelines(instanceRaw)
         
